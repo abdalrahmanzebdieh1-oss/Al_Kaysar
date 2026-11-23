@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مطعم القيصر للمأكولات السورية - المنيو الإلكتروني</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; background-color: #0B0B0B; color: #F8FAFC; }
+    .hidden { display: none !important; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .gold-grad { background: linear-gradient(135deg, #E2C06D 0%, #C59B38 100%); }
+  </style>
+  <script>
+    window.handleBannerError = function(el) { el.style.display = 'none'; };
+  </script>
+</head>
+<body class="min-h-screen pb-28">
+  <div class="max-w-[480px] mx-auto min-h-screen bg-[#111111] border-x border-[#26221A] shadow-2xl flex flex-col">
+    <header class="relative">
+      <div class="h-36 bg-gradient-to-b from-[#2A140E] via-[#1A1410] to-[#111111] relative overflow-hidden">
+        <img id="bannerImg" src="" alt="غلاف مطعم القيصر" onerror="handleBannerError(this)" class="w-full h-full object-cover opacity-50 hidden">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-black/40"></div>
+        <div class="absolute top-3 left-3 flex gap-2 z-10">
+          <a id="callBtn" href="tel:01000000000" class="w-9 h-9 rounded-full bg-black/60 border border-[#E2C06D]/40 flex items-center justify-center text-[#E2C06D] hover:bg-[#E2C06D] hover:text-black transition" title="اتصال">
+            <i data-lucide="phone" class="w-4 h-4"></i>
+          </a>
+          <button onclick="shareMenu()" class="w-9 h-9 rounded-full bg-black/60 border border-[#E2C06D]/40 flex items-center justify-center text-[#E2C06D] hover:bg-[#E2C06D] hover:text-black transition" title="مشاركة المنيو">
+            <i data-lucide="share-2" class="w-4 h-4"></i>
+          </button>
+          <button onclick="openAdminModal()" class="w-9 h-9 rounded-full bg-black/60 border border-[#E2C06D]/40 flex items-center justify-center text-[#E2C06D] hover:bg-[#E2C06D] hover:text-black transition" title="لوحة الإدارة">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="px-4 -mt-12 relative z-10 flex items-end gap-3.5">
+        <div class="w-20 h-20 rounded-full bg-[#0B0B0B] border-2 border-[#E2C06D] shadow-lg flex items-center justify-center shrink-0 overflow-hidden">
+          <svg viewBox="0 0 100 100" class="w-14 h-14 text-[#E2C06D]">
+            <path d="M22 68 Q50 22 78 68 Z" fill="none" stroke="currentColor" stroke-width="5"/>
+            <line x1="50" y1="16" x2="50" y2="28" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+            <line x1="42" y1="16" x2="58" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+            <text x="50" y="61" text-anchor="middle" fill="currentColor" font-size="18" font-weight="800" font-family="Cairo">القيصر</text>
+          </svg>
+        </div>
+        <div class="pb-1 flex-1">
+          <h1 id="storeTitle" class="text-lg font-extrabold text-[#E2C06D] leading-tight">مطعم القيصر للمأكولات السورية</h1>
+          <p class="text-xs text-stone-400 mt-0.5">شاورما • مشاوي حلبية • كبب • طواجن • بيتزا • كافيه</p>
+          <div class="flex items-center gap-2 mt-1.5">
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> متاح للطلب
+            </span>
+            <span id="itemsCountBadge" class="text-[11px] text-stone-400"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sticky top-0 z-20 bg-[#111111]/95 backdrop-blur-md border-b border-[#26221A] pt-3 pb-2.5 px-4 mt-3">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-stone-400 absolute right-3 top-1/2 -translate-y-1/2"></i>
+          <input id="searchInput" type="text" oninput="renderMenu()" placeholder="ابحث عن شاورما، كباب، كبة، بيتزا..." class="w-full bg-[#191919] border border-[#2E291E] rounded-xl pr-9 pl-3 py-2 text-sm text-white placeholder-stone-500 focus:outline-none focus:border-[#E2C06D]">
+        </div>
+        <div id="categoryPills" class="flex gap-2 overflow-x-auto no-scrollbar mt-2.5 pb-0.5"></div>
+      </div>
+    </header>
+
+    <main id="menuList" class="p-4 space-y-6 flex-1"></main>
+
+    <footer class="p-5 border-t border-[#26221A] bg-[#0D0D0D] text-center space-y-2 mt-6">
+      <p class="text-sm font-bold text-[#E2C06D]">مطعم القيصر للمأكولات السورية</p>
+      <p class="text-xs text-stone-500">جميع الأسعار بالجنيه المصري (ج.م)</p>
+      <a href="https://wa.me/201000000000" target="_blank" class="inline-block text-[11px] text-stone-400 hover:text-[#E2C06D] transition pt-2">
+        تم التطوير بواسطة <span class="font-bold text-[#E2C06D]">مَنظومة تك ⚡</span>
+      </a>
+    </footer>
+  </div>
+
+  <div id="cartBar" class="fixed bottom-4 inset-x-0 z-30 px-4 max-w-[480px] mx-auto hidden">
+    <button onclick="openCartModal()" class="w-full gold-grad text-black font-extrabold py-3.5 px-4 rounded-2xl shadow-xl flex items-center justify-between active:scale-[0.99] transition">
+      <div class="flex items-center gap-2.5">
+        <span id="cartCount" class="bg-black text-[#E2C06D] text-xs font-extrabold w-7 h-7 rounded-full flex items-center justify-center">0</span>
+        <span>عرض السلة وإتمام الطلب</span>
+      </div>
+      <span id="cartTotal" class="text-base font-extrabold">0 ج.م</span>
+    </button>
+  </div>
+
+  <div id="modalContainer"></div>
+
+  <script>
+    const STORE_ID = "mt_alkaysar_syrian_v5";
+    let DEFAULT_VIEW_ONLY = false;
+    const DEFAULT_CONFIG = {
+      name: "مطعم القيصر للمأكولات السورية",
+      whatsapp: "201000000000",
+      phone: "01000000000",
+      currency: "ج.م"
+    };
+    const CAT_ICONS = {"شاورما": "🌯", "مشاوي على الفحم": "🍢", "مشاوي ودجاج على الفحم": "🍗", "سندوتشات": "🥙", "وجبات": "🍽️", "الكبب الحلبية": "🧆", "طواجن": "🍲", "أطباق لحوم ومشاوي بالصحن": "🥘", "بيتزا": "🍕", "وجبات وسندوتشات غربية": "🍔", "فطائر ومناقيش": "🥐", "صواني وفطائر عائلية": "🫓", "مناسف": "🍛", "ولائم وعزائم": "👑", "مقبلات وخبز": "🥗", "حلويات": "🍮", "كريب ووافل وسلطات فواكه": "🧇", "عصائر ومشروبات باردة": "🥤", "مشروبات ساخنة وكافيه": "☕", "أراجيل": "💨", "لحمة نية (ملحمة)": "🥩", "خدمات الذبح والتجهيز": "🔥"};
+    const INITIAL_ITEMS = [{"id": "item_001", "cat": "شاورما", "name": "بطاطس سبايسي", "desc": "متبل بنكهة حارة (سبايسي)", "price": 55.0, "options": [], "available": true, "featured": false}, {"id": "item_002", "cat": "شاورما", "name": "سندوتش بطاطس", "desc": "", "price": 55.0, "options": [], "available": true, "featured": false}, {"id": "item_003", "cat": "شاورما", "name": "بطاطس فرنساوي", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_004", "cat": "شاورما", "name": "بطاطس موتزاريلا", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_005", "cat": "شاورما", "name": "موتزاريلا سبايسي", "desc": "متبل بنكهة حارة (سبايسي)", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_006", "cat": "شاورما", "name": "سندوتش شاورما وسط", "desc": "", "price": 80.0, "options": [], "available": true, "featured": false}, {"id": "item_007", "cat": "شاورما", "name": "شاورما وسط سبايسي", "desc": "متبل بنكهة حارة (سبايسي)", "price": 80.0, "options": [], "available": true, "featured": false}, {"id": "item_008", "cat": "شاورما", "name": "سندوتش شاورما كبير", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_009", "cat": "شاورما", "name": "شاورما كبير سبايسي", "desc": "متبل بنكهة حارة (سبايسي)", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_010", "cat": "شاورما", "name": "سندوتش شيش", "desc": "", "price": 110.0, "options": [], "available": true, "featured": false}, {"id": "item_011", "cat": "شاورما", "name": "شاورما فرنساوي", "desc": "", "price": 110.0, "options": [], "available": true, "featured": false}, {"id": "item_012", "cat": "شاورما", "name": "شيش سبايسي", "desc": "متبل بنكهة حارة (سبايسي)", "price": 110.0, "options": [], "available": true, "featured": false}, {"id": "item_013", "cat": "شاورما", "name": "شيش فرنساوي", "desc": "", "price": 120.0, "options": [], "available": true, "featured": false}, {"id": "item_014", "cat": "شاورما", "name": "سندوتش شاورما اكسترا", "desc": "", "price": 135.0, "options": [], "available": true, "featured": false}, {"id": "item_015", "cat": "شاورما", "name": "وجبة شاورما عربي", "desc": "", "price": 175.0, "options": [], "available": true, "featured": false}, {"id": "item_016", "cat": "شاورما", "name": "فتة شاورما", "desc": "", "price": 185.0, "options": [], "available": true, "featured": false}, {"id": "item_017", "cat": "شاورما", "name": "فتة شاورما اكسترا", "desc": "", "price": 200.0, "options": [], "available": true, "featured": false}, {"id": "item_018", "cat": "شاورما", "name": "وجبة شاورما اكسترا", "desc": "", "price": 200.0, "options": [], "available": true, "featured": false}, {"id": "item_019", "cat": "شاورما", "name": "شاورما بالوزن", "desc": "ربع كيلو: 215 ج.م | نصف كيلو: 425 ج.م | كيلو كامل: 850 ج.م", "price": 215.0, "options": [{"name": "ربع كيلو", "price": 215}, {"name": "نصف كيلو", "price": 425}, {"name": "كيلو كامل", "price": 850}], "available": true, "featured": false}, {"id": "item_020", "cat": "شاورما", "name": "وجبة شاورما عربي دبل", "desc": "", "price": 300.0, "options": [], "available": true, "featured": false}, {"id": "item_021", "cat": "مشاوي على الفحم", "name": "مخاصي مشوية", "desc": "ربع كيلو: 210 ج.م | نصف كيلو: 350 ج.م | كيلو كامل: 825 ج.م", "price": 210.0, "options": [{"name": "ربع كيلو", "price": 210}, {"name": "نصف كيلو", "price": 350}, {"name": "كيلو كامل", "price": 825}], "available": true, "featured": false}, {"id": "item_022", "cat": "مشاوي على الفحم", "name": "كبدة مشوية (سودة)", "desc": "ربع كيلو: 230 ج.م | نصف كيلو: 450 ج.م | كيلو كامل: 900 ج.م", "price": 230.0, "options": [{"name": "ربع كيلو", "price": 230}, {"name": "نصف كيلو", "price": 450}, {"name": "كيلو كامل", "price": 900}], "available": true, "featured": false}, {"id": "item_023", "cat": "مشاوي على الفحم", "name": "كفتة حلبي (كباب)", "desc": "ربع كيلو: 250 ج.م | نصف كيلو: 500 ج.م | كيلو كامل: 1000 ج.م", "price": 250.0, "options": [{"name": "ربع كيلو", "price": 250}, {"name": "نصف كيلو", "price": 500}, {"name": "كيلو كامل", "price": 1000}], "available": true, "featured": false}, {"id": "item_024", "cat": "مشاوي على الفحم", "name": "سجق مشوي", "desc": "ربع كيلو: 265 ج.م | نصف كيلو: 415 ج.م | كيلو كامل: 980 ج.م", "price": 265.0, "options": [{"name": "ربع كيلو", "price": 265}, {"name": "نصف كيلو", "price": 415}, {"name": "كيلو كامل", "price": 980}], "available": true, "featured": false}, {"id": "item_025", "cat": "مشاوي على الفحم", "name": "عرايس لحمة", "desc": "ربع كيلو: 265 ج.م | نصف كيلو: 530 ج.م | كيلو كامل: 960 ج.م", "price": 265.0, "options": [{"name": "ربع كيلو", "price": 265}, {"name": "نصف كيلو", "price": 530}, {"name": "كيلو كامل", "price": 960}], "available": true, "featured": false}, {"id": "item_026", "cat": "مشاوي على الفحم", "name": "كبة على السيخ مشوية", "desc": "ربع كيلو: 265 ج.م | نصف كيلو: 525 ج.م | كيلو كامل: 1050 ج.م", "price": 265.0, "options": [{"name": "ربع كيلو", "price": 265}, {"name": "نصف كيلو", "price": 525}, {"name": "كيلو كامل", "price": 1050}], "available": true, "featured": false}, {"id": "item_027", "cat": "مشاوي على الفحم", "name": "كفتة باذنجان", "desc": "ربع كيلو: 265 ج.م | نصف كيلو: 525 ج.م | كيلو كامل: 1050 ج.م", "price": 265.0, "options": [{"name": "ربع كيلو", "price": 265}, {"name": "نصف كيلو", "price": 525}, {"name": "كيلو كامل", "price": 1050}], "available": true, "featured": false}, {"id": "item_028", "cat": "مشاوي على الفحم", "name": "كفتة خشخاش", "desc": "ربع كيلو: 265 ج.م | نصف كيلو: 525 ج.م | كيلو كامل: 1050 ج.م", "price": 265.0, "options": [{"name": "ربع كيلو", "price": 265}, {"name": "نصف كيلو", "price": 525}, {"name": "كيلو كامل", "price": 1050}], "available": true, "featured": false}, {"id": "item_029", "cat": "مشاوي على الفحم", "name": "كفتة فلسطيني", "desc": "ربع كيلو: 265 ج.م | نصف كيلو: 525 ج.م | كيلو كامل: 1050 ج.م", "price": 265.0, "options": [{"name": "ربع كيلو", "price": 265}, {"name": "نصف كيلو", "price": 525}, {"name": "كيلو كامل", "price": 1050}], "available": true, "featured": false}, {"id": "item_030", "cat": "مشاوي على الفحم", "name": "ماريا", "desc": "ربع كيلو: 265 ج.م | نصف كيلو: 525 ج.م | كيلو كامل: 1025 ج.م", "price": 265.0, "options": [{"name": "ربع كيلو", "price": 265}, {"name": "نصف كيلو", "price": 525}, {"name": "كيلو كامل", "price": 1025}], "available": true, "featured": false}, {"id": "item_031", "cat": "مشاوي على الفحم", "name": "طوشكا عجين", "desc": "ربع كيلو: 275 ج.م | نصف كيلو: 500 ج.م", "price": 275.0, "options": [{"name": "ربع كيلو", "price": 275}, {"name": "نصف كيلو", "price": 500}], "available": true, "featured": false}, {"id": "item_032", "cat": "مشاوي على الفحم", "name": "طوشكا مشوية", "desc": "ربع كيلو: 275 ج.م | نصف كيلو: 550 ج.م | كيلو كامل: 1100 ج.م", "price": 275.0, "options": [{"name": "ربع كيلو", "price": 275}, {"name": "نصف كيلو", "price": 550}, {"name": "كيلو كامل", "price": 1100}], "available": true, "featured": false}, {"id": "item_033", "cat": "مشاوي على الفحم", "name": "كفتة أزمرلي", "desc": "ربع كيلو: 275 ج.م | نصف كيلو: 550 ج.م | كيلو كامل: 1100 ج.م", "price": 275.0, "options": [{"name": "ربع كيلو", "price": 275}, {"name": "نصف كيلو", "price": 550}, {"name": "كيلو كامل", "price": 1100}], "available": true, "featured": false}, {"id": "item_034", "cat": "مشاوي على الفحم", "name": "معجوقة", "desc": "ربع كيلو: 275 ج.م | نصف كيلو: 550 ج.م | كيلو كامل: 1100 ج.م", "price": 275.0, "options": [{"name": "ربع كيلو", "price": 275}, {"name": "نصف كيلو", "price": 550}, {"name": "كيلو كامل", "price": 1100}], "available": true, "featured": false}, {"id": "item_035", "cat": "مشاوي على الفحم", "name": "كباب لحم (شقف)", "desc": "ربع كيلو: 335 ج.م | نصف كيلو: 665 ج.م | كيلو كامل: 1325 ج.م", "price": 335.0, "options": [{"name": "ربع كيلو", "price": 335}, {"name": "نصف كيلو", "price": 665}, {"name": "كيلو كامل", "price": 1325}], "available": true, "featured": false}, {"id": "item_036", "cat": "مشاوي على الفحم", "name": "ريش ضاني مشوية", "desc": "ربع كيلو: 360 ج.م | نصف كيلو: 650 ج.م | كيلو كامل: 1400 ج.م", "price": 360.0, "options": [{"name": "ربع كيلو", "price": 360}, {"name": "نصف كيلو", "price": 650}, {"name": "كيلو كامل", "price": 1400}], "available": true, "featured": false}, {"id": "item_037", "cat": "مشاوي على الفحم", "name": "دهنة مشوية", "desc": "الأوزان المتاحة: كيلو كامل", "price": 500.0, "options": [], "available": true, "featured": false}, {"id": "item_038", "cat": "مشاوي على الفحم", "name": "لحمة بالكرز", "desc": "ربع كيلو: 500 ج.م | نصف كيلو: 1000 ج.م | كيلو كامل: 2000 ج.م", "price": 500.0, "options": [{"name": "ربع كيلو", "price": 500}, {"name": "نصف كيلو", "price": 1000}, {"name": "كيلو كامل", "price": 2000}], "available": true, "featured": false}, {"id": "item_039", "cat": "مشاوي على الفحم", "name": "كفتة أورفه لي", "desc": "نصف كيلو: 525 ج.م | كيلو كامل: 1050 ج.م", "price": 525.0, "options": [{"name": "نصف كيلو", "price": 525}, {"name": "كيلو كامل", "price": 1050}], "available": true, "featured": false}, {"id": "item_040", "cat": "مشاوي على الفحم", "name": "بفتيك ملفوفة", "desc": "نصف كيلو: 700 ج.م | كيلو كامل: 1450 ج.م", "price": 700.0, "options": [{"name": "نصف كيلو", "price": 700}, {"name": "كيلو كامل", "price": 1450}], "available": true, "featured": false}, {"id": "item_041", "cat": "مشاوي على الفحم", "name": "كفته فراخ", "desc": "الأوزان المتاحة: كيلو كامل", "price": 700.0, "options": [], "available": true, "featured": false}, {"id": "item_042", "cat": "مشاوي على الفحم", "name": "اقراص نعناع", "desc": "الأوزان المتاحة: كيلو كامل", "price": 1050.0, "options": [], "available": true, "featured": false}, {"id": "item_043", "cat": "مشاوي على الفحم", "name": "كفتة كعب الغزال", "desc": "الأوزان المتاحة: كيلو كامل", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_044", "cat": "مشاوي على الفحم", "name": "كفته خشخاش مع فرشة بندورة", "desc": "الأوزان المتاحة: كيلو كامل", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_045", "cat": "مشاوي على الفحم", "name": "بفتيك القيصر", "desc": "الأوزان المتاحة: كيلو كامل", "price": 1200.0, "options": [], "available": true, "featured": false}, {"id": "item_046", "cat": "مشاوي على الفحم", "name": "مشكل", "desc": "الأوزان المتاحة: كيلو كامل", "price": 1200.0, "options": [], "available": true, "featured": false}, {"id": "item_047", "cat": "مشاوي على الفحم", "name": "بفتيك (شرحات) ليمون", "desc": "الأوزان المتاحة: كيلو كامل", "price": 1400.0, "options": [], "available": true, "featured": false}, {"id": "item_048", "cat": "مشاوي على الفحم", "name": "بفتيك (شرحات) مشروم", "desc": "الأوزان المتاحة: كيلو كامل", "price": 1400.0, "options": [], "available": true, "featured": false}, {"id": "item_049", "cat": "مشاوي ودجاج على الفحم", "name": "جوانح دجاج مشوية على الفحم", "desc": "ربع كيلو: 90 ج.م | نصف كيلو: 175 ج.م | كيلو كامل: 350 ج.م", "price": 90.0, "options": [{"name": "ربع كيلو", "price": 90}, {"name": "نصف كيلو", "price": 175}, {"name": "كيلو كامل", "price": 350}], "available": true, "featured": false}, {"id": "item_050", "cat": "مشاوي ودجاج على الفحم", "name": "دجاج على الفحم", "desc": "وجبة ربع فرخة (ورك): 110 ج.م | وجبة ربع فرخة (صدر): 140 ج.م | وجبة نصف فرخة: 225 ج.م | فرخة كاملة على الفحم: 435 ج.م", "price": 110.0, "options": [{"name": "وجبة ربع فرخة (ورك)", "price": 110}, {"name": "وجبة ربع فرخة (صدر)", "price": 140}, {"name": "وجبة نصف فرخة", "price": 225}, {"name": "فرخة كاملة على الفحم", "price": 435}], "available": true, "featured": false}, {"id": "item_051", "cat": "مشاوي ودجاج على الفحم", "name": "شيش طاووق مشوي على الفحم", "desc": "ربع كيلو: 165 ج.م | وجبة شيش طاووق: 185 ج.م | نصف كيلو: 340 ج.م | كيلو كامل: 660 ج.م", "price": 165.0, "options": [{"name": "ربع كيلو", "price": 165}, {"name": "وجبة شيش طاووق", "price": 185}, {"name": "نصف كيلو", "price": 340}, {"name": "كيلو كامل", "price": 660}], "available": true, "featured": false}, {"id": "item_052", "cat": "مشاوي ودجاج على الفحم", "name": "فرخة شيش مسحبة", "desc": "فرخة كاملة مسحبة متبلة ومشوية على الفحم", "price": 410.0, "options": [], "available": true, "featured": false}, {"id": "item_053", "cat": "سندوتشات", "name": "سندوتش سجق", "desc": "", "price": 85.0, "options": [], "available": true, "featured": false}, {"id": "item_054", "cat": "سندوتشات", "name": "سندوتش كبة عالسيخ", "desc": "", "price": 105.0, "options": [], "available": true, "featured": false}, {"id": "item_055", "cat": "سندوتشات", "name": "سندوتش كفتة خشخاش", "desc": "", "price": 105.0, "options": [], "available": true, "featured": false}, {"id": "item_056", "cat": "سندوتشات", "name": "سندوتش كفتة فلسطيني", "desc": "", "price": 105.0, "options": [], "available": true, "featured": false}, {"id": "item_057", "cat": "سندوتشات", "name": "سندوتش كبدة", "desc": "", "price": 110.0, "options": [], "available": true, "featured": false}, {"id": "item_058", "cat": "سندوتشات", "name": "سندوتش كفتة حلبي", "desc": "", "price": 110.0, "options": [], "available": true, "featured": false}, {"id": "item_059", "cat": "سندوتشات", "name": "سندوتش ماريا", "desc": "", "price": 110.0, "options": [], "available": true, "featured": false}, {"id": "item_060", "cat": "سندوتشات", "name": "سندوتش عرايس", "desc": "", "price": 115.0, "options": [], "available": true, "featured": false}, {"id": "item_061", "cat": "سندوتشات", "name": "سندوتش طوشكا", "desc": "", "price": 120.0, "options": [], "available": true, "featured": false}, {"id": "item_062", "cat": "سندوتشات", "name": "سندوتش كفتة ازمرلي", "desc": "", "price": 120.0, "options": [], "available": true, "featured": false}, {"id": "item_063", "cat": "سندوتشات", "name": "كفتة فرنساوي", "desc": "", "price": 120.0, "options": [], "available": true, "featured": false}, {"id": "item_064", "cat": "سندوتشات", "name": "سندوتش شقف", "desc": "", "price": 135.0, "options": [], "available": true, "featured": false}, {"id": "item_065", "cat": "وجبات", "name": "وجبة لحمة مع رز", "desc": "", "price": 200.0, "options": [], "available": true, "featured": false}, {"id": "item_066", "cat": "وجبات", "name": "وجبة سودة", "desc": "", "price": 240.0, "options": [], "available": true, "featured": false}, {"id": "item_067", "cat": "وجبات", "name": "وجبة كفتة حلبي", "desc": "", "price": 260.0, "options": [], "available": true, "featured": false}, {"id": "item_068", "cat": "وجبات", "name": "وجبة كفتة خشخاش", "desc": "", "price": 265.0, "options": [], "available": true, "featured": false}, {"id": "item_069", "cat": "وجبات", "name": "وجبة كفتة ازمرلي", "desc": "", "price": 270.0, "options": [], "available": true, "featured": false}, {"id": "item_070", "cat": "وجبات", "name": "وجبة كفتة باذنجان", "desc": "", "price": 270.0, "options": [], "available": true, "featured": false}, {"id": "item_071", "cat": "وجبات", "name": "وجبة شقف", "desc": "", "price": 350.0, "options": [], "available": true, "featured": false}, {"id": "item_072", "cat": "وجبات", "name": "وجبة ميكس جريل", "desc": "", "price": 370.0, "options": [], "available": true, "featured": false}, {"id": "item_073", "cat": "وجبات", "name": "وجبة فريكة", "desc": "", "price": 450.0, "options": [], "available": true, "featured": false}, {"id": "item_074", "cat": "وجبات", "name": "وجبة يبرق", "desc": "", "price": 450.0, "options": [], "available": true, "featured": false}, {"id": "item_075", "cat": "وجبات", "name": "وجبات مشكله", "desc": "", "price": 1000.0, "options": [], "available": true, "featured": false}, {"id": "item_076", "cat": "الكبب الحلبية", "name": "برك جبنه", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_077", "cat": "الكبب الحلبية", "name": "برك لحمة", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_078", "cat": "الكبب الحلبية", "name": "قرص كبه مقليه", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_079", "cat": "الكبب الحلبية", "name": "قطعة أوزي", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_080", "cat": "الكبب الحلبية", "name": "قرص كبه مبرومه", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_081", "cat": "الكبب الحلبية", "name": "قرص كبه مشويه", "desc": "", "price": 95.0, "options": [], "available": true, "featured": false}, {"id": "item_082", "cat": "الكبب الحلبية", "name": "كبة بالصينية", "desc": "وسط: 650 ج.م | كبير: 700 ج.م", "price": 650.0, "options": [{"name": "وسط", "price": 650}, {"name": "كبير", "price": 700}], "available": true, "featured": false}, {"id": "item_083", "cat": "الكبب الحلبية", "name": "كبة صاجية", "desc": "", "price": 650.0, "options": [], "available": true, "featured": false}, {"id": "item_084", "cat": "الكبب الحلبية", "name": "كيلو كبة مقلية", "desc": "", "price": 850.0, "options": [], "available": true, "featured": false}, {"id": "item_085", "cat": "الكبب الحلبية", "name": "كيلو كبيبة مشوية", "desc": "", "price": 850.0, "options": [], "available": true, "featured": false}, {"id": "item_086", "cat": "الكبب الحلبية", "name": "كبة سوار الست", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_087", "cat": "الكبب الحلبية", "name": "كيلو كبة مبرومة", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_088", "cat": "الكبب الحلبية", "name": "كبة عالسيخ", "desc": "", "price": 1050.0, "options": [], "available": true, "featured": false}, {"id": "item_089", "cat": "طواجن", "name": "طاجن فراخ بالبطاطس", "desc": "", "price": 700.0, "options": [], "available": true, "featured": false}, {"id": "item_090", "cat": "طواجن", "name": "طاجن شيش بالليمون", "desc": "", "price": 730.0, "options": [], "available": true, "featured": false}, {"id": "item_091", "cat": "طواجن", "name": "طاجن شيش بالموزريلا", "desc": "", "price": 775.0, "options": [], "available": true, "featured": false}, {"id": "item_092", "cat": "طواجن", "name": "طاجن كبدة بالخضار", "desc": "", "price": 875.0, "options": [], "available": true, "featured": false}, {"id": "item_093", "cat": "طواجن", "name": "طاجن القيصر", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_094", "cat": "طواجن", "name": "طاجن كفتة بالطحينة", "desc": "", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_095", "cat": "طواجن", "name": "طاجن كفتة بالطماطم", "desc": "", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_096", "cat": "طواجن", "name": "طاجن كفتة بالمشروم", "desc": "", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_097", "cat": "طواجن", "name": "طاجن كفتة هندي", "desc": "", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_098", "cat": "طواجن", "name": "لحم بالفرن (محوشة)", "desc": "", "price": 1350.0, "options": [], "available": true, "featured": false}, {"id": "item_099", "cat": "طواجن", "name": "طاجن شقف بالمشروم", "desc": "", "price": 1400.0, "options": [], "available": true, "featured": false}, {"id": "item_100", "cat": "أطباق لحوم ومشاوي بالصحن", "name": "كفتة مشروم", "desc": "ربع كيلو: 225 ج.م | نصف كيلو: 550 ج.م", "price": 225.0, "options": [{"name": "ربع كيلو", "price": 225}, {"name": "نصف كيلو", "price": 550}], "available": true, "featured": false}, {"id": "item_101", "cat": "أطباق لحوم ومشاوي بالصحن", "name": "كباب بالطماطم", "desc": "ربع كيلو: 245 ج.م | نصف كيلو: 550 ج.م", "price": 245.0, "options": [{"name": "ربع كيلو", "price": 245}, {"name": "نصف كيلو", "price": 550}], "available": true, "featured": false}, {"id": "item_102", "cat": "أطباق لحوم ومشاوي بالصحن", "name": "كفتة هندي", "desc": "ربع كيلو: 245 ج.م | نصف كيلو: 500 ج.م", "price": 245.0, "options": [{"name": "ربع كيلو", "price": 245}, {"name": "نصف كيلو", "price": 500}], "available": true, "featured": false}, {"id": "item_103", "cat": "أطباق لحوم ومشاوي بالصحن", "name": "كباب بالطحينة", "desc": "ربع كيلو: 250 ج.م | نصف كيلو: 550 ج.م", "price": 250.0, "options": [{"name": "ربع كيلو", "price": 250}, {"name": "نصف كيلو", "price": 550}], "available": true, "featured": false}, {"id": "item_104", "cat": "أطباق لحوم ومشاوي بالصحن", "name": "لحمة بالصحن", "desc": "ربع كيلو: 265 ج.م | نصف كيلو: 550 ج.م | صحن كامل (كيلو): 1000 ج.م", "price": 265.0, "options": [{"name": "ربع كيلو", "price": 265}, {"name": "نصف كيلو", "price": 550}, {"name": "صحن كامل (كيلو)", "price": 1000}], "available": true, "featured": false}, {"id": "item_105", "cat": "أطباق لحوم ومشاوي بالصحن", "name": "شقف بالمشروم", "desc": "ربع كيلو: 315 ج.م | نصف كيلو: 700 ج.م", "price": 315.0, "options": [{"name": "ربع كيلو", "price": 315}, {"name": "نصف كيلو", "price": 700}], "available": true, "featured": false}, {"id": "item_106", "cat": "بيتزا", "name": "بيتزا هوت دوغ", "desc": "وسط (M): 150 ج.م | كبير (L): 170 ج.م", "price": 150.0, "options": [{"name": "وسط (M)", "price": 150}, {"name": "كبير (L)", "price": 170}], "available": true, "featured": false}, {"id": "item_107", "cat": "بيتزا", "name": "بيتزا بيبروني", "desc": "وسط (M): 155 ج.م | كبير (L): 175 ج.م", "price": 155.0, "options": [{"name": "وسط (M)", "price": 155}, {"name": "كبير (L)", "price": 175}], "available": true, "featured": false}, {"id": "item_108", "cat": "بيتزا", "name": "بيتزا فونوجي مشروم", "desc": "وسط (M): 155 ج.م | كبير (L): 175 ج.م", "price": 155.0, "options": [{"name": "وسط (M)", "price": 155}, {"name": "كبير (L)", "price": 175}], "available": true, "featured": false}, {"id": "item_109", "cat": "بيتزا", "name": "بيتزا مارجريتا", "desc": "وسط (M): 155 ج.م | كبير (L): 170 ج.م", "price": 155.0, "options": [{"name": "وسط (M)", "price": 155}, {"name": "كبير (L)", "price": 170}], "available": true, "featured": false}, {"id": "item_110", "cat": "بيتزا", "name": "بيتزا الفصول الاربعة", "desc": "وسط (M): 165 ج.م | كبير (L): 180 ج.م", "price": 165.0, "options": [{"name": "وسط (M)", "price": 165}, {"name": "كبير (L)", "price": 180}], "available": true, "featured": false}, {"id": "item_111", "cat": "بيتزا", "name": "بيتزا تركي مدخن", "desc": "وسط (M): 170 ج.م | كبير (L): 185 ج.م", "price": 170.0, "options": [{"name": "وسط (M)", "price": 170}, {"name": "كبير (L)", "price": 185}], "available": true, "featured": false}, {"id": "item_112", "cat": "بيتزا", "name": "بيتزا مشكل جبن", "desc": "وسط (M): 170 ج.م | كبير (L): 195 ج.م", "price": 170.0, "options": [{"name": "وسط (M)", "price": 170}, {"name": "كبير (L)", "price": 195}], "available": true, "featured": false}, {"id": "item_113", "cat": "بيتزا", "name": "بيتزا شيش", "desc": "وسط (M): 175 ج.م | كبير (L): 200 ج.م", "price": 175.0, "options": [{"name": "وسط (M)", "price": 175}, {"name": "كبير (L)", "price": 200}], "available": true, "featured": false}, {"id": "item_114", "cat": "بيتزا", "name": "بيتزا هاواي", "desc": "وسط (M): 175 ج.م | كبير (L): 200 ج.م", "price": 175.0, "options": [{"name": "وسط (M)", "price": 175}, {"name": "كبير (L)", "price": 200}], "available": true, "featured": false}, {"id": "item_115", "cat": "بيتزا", "name": "بيتزا شاورما فراخ", "desc": "وسط (M): 180 ج.م | كبير (L): 200 ج.م", "price": 180.0, "options": [{"name": "وسط (M)", "price": 180}, {"name": "كبير (L)", "price": 200}], "available": true, "featured": false}, {"id": "item_116", "cat": "بيتزا", "name": "بيتزا باربيكيو", "desc": "وسط (M): 185 ج.م | كبير (L): 210 ج.م", "price": 185.0, "options": [{"name": "وسط (M)", "price": 185}, {"name": "كبير (L)", "price": 210}], "available": true, "featured": false}, {"id": "item_117", "cat": "بيتزا", "name": "بيتزا سجق", "desc": "وسط (M): 190 ج.م | كبير (L): 220 ج.م", "price": 190.0, "options": [{"name": "وسط (M)", "price": 190}, {"name": "كبير (L)", "price": 220}], "available": true, "featured": false}, {"id": "item_118", "cat": "بيتزا", "name": "بيتزا كرسبي", "desc": "وسط (M): 210 ج.م | كبير (L): 235 ج.م", "price": 210.0, "options": [{"name": "وسط (M)", "price": 210}, {"name": "كبير (L)", "price": 235}], "available": true, "featured": false}, {"id": "item_119", "cat": "وجبات وسندوتشات غربية", "name": "دجاج شواية", "desc": "ربع فرخة (ورك): 120 ج.م | ربع فرخة (صدر): 145 ج.م | نصف فرخة شواية: 235 ج.م | فرخة شواية كاملة: 440 ج.م", "price": 120.0, "options": [{"name": "ربع فرخة (ورك)", "price": 120}, {"name": "ربع فرخة (صدر)", "price": 145}, {"name": "نصف فرخة شواية", "price": 235}, {"name": "فرخة شواية كاملة", "price": 440}], "available": true, "featured": false}, {"id": "item_120", "cat": "وجبات وسندوتشات غربية", "name": "دجاج بروستد مقرمش", "desc": "ربع فرخة (ورك + دبوس): 130 ج.م | ربع فرخة (صدر + جناح): 155 ج.م | نصف فرخة بروستد: 250 ج.م | فرخة بروستد كاملة: 450 ج.م", "price": 130.0, "options": [{"name": "ربع فرخة (ورك + دبوس)", "price": 130}, {"name": "ربع فرخة (صدر + جناح)", "price": 155}, {"name": "نصف فرخة بروستد", "price": 250}, {"name": "فرخة بروستد كاملة", "price": 450}], "available": true, "featured": false}, {"id": "item_121", "cat": "وجبات وسندوتشات غربية", "name": "فاهيتا دجاج", "desc": "سندوتش فاهيتا: 130 ج.م | وجبة فاهيتا: 225 ج.م", "price": 130.0, "options": [{"name": "سندوتش فاهيتا", "price": 130}, {"name": "وجبة فاهيتا", "price": 225}], "available": true, "featured": false}, {"id": "item_122", "cat": "وجبات وسندوتشات غربية", "name": "إسكالوب بانيه", "desc": "سندوتش إسكالوب بانيه: 140 ج.م | وجبة إسكالوب بانيه: 200 ج.م | كيلو إسكالوب بانيه: 800 ج.م", "price": 140.0, "options": [{"name": "سندوتش إسكالوب بانيه", "price": 140}, {"name": "وجبة إسكالوب بانيه", "price": 200}, {"name": "كيلو إسكالوب بانيه", "price": 800}], "available": true, "featured": false}, {"id": "item_123", "cat": "وجبات وسندوتشات غربية", "name": "تشيكن زنجر", "desc": "سندوتش زنجر: 140 ج.م | وجبة زنجر: 200 ج.م | كيلو زنجر: 950 ج.م", "price": 140.0, "options": [{"name": "سندوتش زنجر", "price": 140}, {"name": "وجبة زنجر", "price": 200}, {"name": "كيلو زنجر", "price": 950}], "available": true, "featured": false}, {"id": "item_124", "cat": "وجبات وسندوتشات غربية", "name": "تشيكن كرسبي", "desc": "سندوتش كرسبي: 140 ج.م | وجبة كرسبي: 200 ج.م | كيلو كرسبي: 950 ج.م", "price": 140.0, "options": [{"name": "سندوتش كرسبي", "price": 140}, {"name": "وجبة كرسبي", "price": 200}, {"name": "كيلو كرسبي", "price": 950}], "available": true, "featured": false}, {"id": "item_125", "cat": "وجبات وسندوتشات غربية", "name": "مكسيكانو دجاج", "desc": "سندوتش مكسيكانو: 140 ج.م | وجبة مكسيكانو: 185 ج.م", "price": 140.0, "options": [{"name": "سندوتش مكسيكانو", "price": 140}, {"name": "وجبة مكسيكانو", "price": 185}], "available": true, "featured": false}, {"id": "item_126", "cat": "وجبات وسندوتشات غربية", "name": "برغر تشيكن", "desc": "", "price": 150.0, "options": [], "available": true, "featured": false}, {"id": "item_127", "cat": "وجبات وسندوتشات غربية", "name": "فرخة مندي", "desc": "فرخة مندي كاملة مع أرز بسمتي", "price": 600.0, "options": [], "available": true, "featured": false}, {"id": "item_128", "cat": "فطائر ومناقيش", "name": "زعتر", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_129", "cat": "فطائر ومناقيش", "name": "زعتر و محمرة", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_130", "cat": "فطائر ومناقيش", "name": "سنفورة", "desc": "", "price": 30.0, "options": [], "available": true, "featured": false}, {"id": "item_131", "cat": "فطائر ومناقيش", "name": "لبنة", "desc": "", "price": 30.0, "options": [], "available": true, "featured": false}, {"id": "item_132", "cat": "فطائر ومناقيش", "name": "موتزاريلا", "desc": "", "price": 30.0, "options": [], "available": true, "featured": false}, {"id": "item_133", "cat": "فطائر ومناقيش", "name": "فطائر مشكلة", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_134", "cat": "فطائر ومناقيش", "name": "فطيرة بيتزا", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_135", "cat": "فطائر ومناقيش", "name": "فطيرة محمرة", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_136", "cat": "فطائر ومناقيش", "name": "هوت دوغ بالجبنة", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_137", "cat": "فطائر ومناقيش", "name": "جبنة حلوم", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_138", "cat": "فطائر ومناقيش", "name": "فطيرة سجق", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_139", "cat": "فطائر ومناقيش", "name": "فطيرة شيش", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_140", "cat": "فطائر ومناقيش", "name": "فطيرة نوتيلا", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_141", "cat": "فطائر ومناقيش", "name": "قرص لحم بعجين", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_142", "cat": "فطائر ومناقيش", "name": "كيري", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_143", "cat": "فطائر ومناقيش", "name": "جبنة شامية", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_144", "cat": "فطائر ومناقيش", "name": "جبنة وزعتر", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_145", "cat": "فطائر ومناقيش", "name": "جبنة ومحمرة", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_146", "cat": "فطائر ومناقيش", "name": "لحمة", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_147", "cat": "فطائر ومناقيش", "name": "مشكل جبن", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_148", "cat": "فطائر ومناقيش", "name": "تركي كيري", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_149", "cat": "فطائر ومناقيش", "name": "تركي موزريلا", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_150", "cat": "فطائر ومناقيش", "name": "فطيرة سجق جبنة", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_151", "cat": "فطائر ومناقيش", "name": "فطيرة شيش موزريلا", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_152", "cat": "صواني وفطائر عائلية", "name": "صفيحة شامية", "desc": "ربع صينية: 250 ج.م | نصف صينية: 500 ج.م | صينية كاملة: 1000 ج.م", "price": 250.0, "options": [{"name": "ربع صينية", "price": 250}, {"name": "نصف صينية", "price": 500}, {"name": "صينية كاملة", "price": 1000}], "available": true, "featured": false}, {"id": "item_153", "cat": "صواني وفطائر عائلية", "name": "لحم العجين", "desc": "ربع صينية", "price": 250.0, "options": [], "available": true, "featured": false}, {"id": "item_154", "cat": "صواني وفطائر عائلية", "name": "مجرمشة ساده", "desc": "نصف صينية: 475 ج.م | صينية كاملة: 1000 ج.م", "price": 475.0, "options": [{"name": "نصف صينية", "price": 475}, {"name": "صينية كاملة", "price": 1000}], "available": true, "featured": false}, {"id": "item_155", "cat": "صواني وفطائر عائلية", "name": "لحم العجين احمر", "desc": "نصف صينية: 500 ج.م | صينية كاملة: 1000 ج.م", "price": 500.0, "options": [{"name": "نصف صينية", "price": 500}, {"name": "صينية كاملة", "price": 1000}], "available": true, "featured": false}, {"id": "item_156", "cat": "صواني وفطائر عائلية", "name": "لحم العجين اسود", "desc": "نصف صينية: 500 ج.م | صينية كاملة: 1000 ج.م", "price": 500.0, "options": [{"name": "نصف صينية", "price": 500}, {"name": "صينية كاملة", "price": 1000}], "available": true, "featured": false}, {"id": "item_157", "cat": "صواني وفطائر عائلية", "name": "مخاصي عالعجين", "desc": "صينية كاملة", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_158", "cat": "صواني وفطائر عائلية", "name": "طوشكا عجين", "desc": "صينية كاملة", "price": 1000.0, "options": [], "available": true, "featured": false}, {"id": "item_159", "cat": "صواني وفطائر عائلية", "name": "لحم العجين مشكل", "desc": "صينية كاملة", "price": 1000.0, "options": [], "available": true, "featured": false}, {"id": "item_160", "cat": "صواني وفطائر عائلية", "name": "مجرمشة بالخضار", "desc": "صينية كاملة", "price": 1000.0, "options": [], "available": true, "featured": false}, {"id": "item_161", "cat": "صواني وفطائر عائلية", "name": "عش البلبل احمر", "desc": "صينية كاملة", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_162", "cat": "صواني وفطائر عائلية", "name": "عش البلبل اسود", "desc": "صينية كاملة", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_163", "cat": "صواني وفطائر عائلية", "name": "عش البلبل حلبي وعنتابي", "desc": "صينية كاملة", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_164", "cat": "صواني وفطائر عائلية", "name": "شرحات بالعجين", "desc": "صينية كاملة", "price": 1425.0, "options": [], "available": true, "featured": false}, {"id": "item_165", "cat": "مناسف", "name": "منسف فراخ", "desc": "", "price": 500.0, "options": [], "available": true, "featured": false}, {"id": "item_166", "cat": "مناسف", "name": "منسف نص كتف", "desc": "", "price": 1200.0, "options": [], "available": true, "featured": false}, {"id": "item_167", "cat": "مناسف", "name": "منسف متفرق", "desc": "", "price": 1500.0, "options": [], "available": true, "featured": false}, {"id": "item_168", "cat": "مناسف", "name": "منسف ثروت", "desc": "", "price": 1800.0, "options": [], "available": true, "featured": false}, {"id": "item_169", "cat": "مناسف", "name": "منسف فخذة ضاني", "desc": "", "price": 1950.0, "options": [], "available": true, "featured": false}, {"id": "item_170", "cat": "مناسف", "name": "منسف كتف", "desc": "", "price": 2250.0, "options": [], "available": true, "featured": false}, {"id": "item_171", "cat": "مناسف", "name": "منسف كتف ونص", "desc": "", "price": 3100.0, "options": [], "available": true, "featured": false}, {"id": "item_172", "cat": "مناسف", "name": "منسف كتفين", "desc": "", "price": 4600.0, "options": [], "available": true, "featured": false}, {"id": "item_173", "cat": "مناسف", "name": "منسف 3 أكتاف", "desc": "", "price": 7300.0, "options": [], "available": true, "featured": false}, {"id": "item_174", "cat": "ولائم وعزائم", "name": "محشي", "desc": "", "price": 350.0, "options": [], "available": true, "featured": false}, {"id": "item_175", "cat": "ولائم وعزائم", "name": "سفرجلية", "desc": "", "price": 500.0, "options": [], "available": true, "featured": false}, {"id": "item_176", "cat": "ولائم وعزائم", "name": "كتف بالخضار", "desc": "", "price": 550.0, "options": [], "available": true, "featured": false}, {"id": "item_177", "cat": "ولائم وعزائم", "name": "أوزي", "desc": "", "price": 600.0, "options": [], "available": true, "featured": false}, {"id": "item_178", "cat": "ولائم وعزائم", "name": "تريت باللبن", "desc": "", "price": 1000.0, "options": [], "available": true, "featured": false}, {"id": "item_179", "cat": "ولائم وعزائم", "name": "سماقية", "desc": "", "price": 1000.0, "options": [], "available": true, "featured": false}, {"id": "item_180", "cat": "ولائم وعزائم", "name": "أرمان", "desc": "", "price": 1100.0, "options": [], "available": true, "featured": false}, {"id": "item_181", "cat": "ولائم وعزائم", "name": "يبرق", "desc": "", "price": 2500.0, "options": [], "available": true, "featured": false}, {"id": "item_182", "cat": "مقبلات وخبز", "name": "رغيف لبناني", "desc": "", "price": 2.5, "options": [], "available": true, "featured": false}, {"id": "item_183", "cat": "مقبلات وخبز", "name": "رغيف سوري", "desc": "", "price": 4.0, "options": [], "available": true, "featured": false}, {"id": "item_184", "cat": "مقبلات وخبز", "name": "خبز فرن", "desc": "", "price": 5.0, "options": [], "available": true, "featured": false}, {"id": "item_185", "cat": "مقبلات وخبز", "name": "ثومية", "desc": "صغير: 15 ج.م | كبير: 30 ج.م", "price": 15.0, "options": [{"name": "صغير", "price": 15}, {"name": "كبير", "price": 30}], "available": true, "featured": false}, {"id": "item_186", "cat": "مقبلات وخبز", "name": "حمض الليمون", "desc": "", "price": 15.0, "options": [], "available": true, "featured": false}, {"id": "item_187", "cat": "مقبلات وخبز", "name": "دبس رمان", "desc": "", "price": 15.0, "options": [], "available": true, "featured": false}, {"id": "item_188", "cat": "مقبلات وخبز", "name": "كاتشب", "desc": "", "price": 15.0, "options": [], "available": true, "featured": false}, {"id": "item_189", "cat": "مقبلات وخبز", "name": "سلطة جرجير", "desc": "صغير: 20 ج.م | كبير: 40 ج.م", "price": 20.0, "options": [{"name": "صغير", "price": 20}, {"name": "كبير", "price": 40}], "available": true, "featured": false}, {"id": "item_190", "cat": "مقبلات وخبز", "name": "سلطة خضراء", "desc": "صغير: 20 ج.م | كبير: 55 ج.م", "price": 20.0, "options": [{"name": "صغير", "price": 20}, {"name": "كبير", "price": 55}], "available": true, "featured": false}, {"id": "item_191", "cat": "مقبلات وخبز", "name": "خبز محير", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_192", "cat": "مقبلات وخبز", "name": "سرفيس", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_193", "cat": "مقبلات وخبز", "name": "سيخ بصل وطماطم مشوي", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_194", "cat": "مقبلات وخبز", "name": "لسان عصفور", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_195", "cat": "مقبلات وخبز", "name": "مخلل", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_196", "cat": "مقبلات وخبز", "name": "بيواظ", "desc": "", "price": 30.0, "options": [], "available": true, "featured": false}, {"id": "item_197", "cat": "مقبلات وخبز", "name": "شوربة عدس", "desc": "", "price": 30.0, "options": [], "available": true, "featured": false}, {"id": "item_198", "cat": "مقبلات وخبز", "name": "حمص", "desc": "وسط: 35 ج.م | كبير: 50 ج.م", "price": 35.0, "options": [{"name": "وسط", "price": 35}, {"name": "كبير", "price": 50}], "available": true, "featured": false}, {"id": "item_199", "cat": "مقبلات وخبز", "name": "طحينه", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_200", "cat": "مقبلات وخبز", "name": "كول سلو", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_201", "cat": "مقبلات وخبز", "name": "حمص بيروتي", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_202", "cat": "مقبلات وخبز", "name": "سلطة مشوية", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_203", "cat": "مقبلات وخبز", "name": "طبق بطاطس", "desc": "وسط: 50 ج.م | كبير: 70 ج.م", "price": 50.0, "options": [{"name": "وسط", "price": 50}, {"name": "كبير", "price": 70}], "available": true, "featured": false}, {"id": "item_204", "cat": "مقبلات وخبز", "name": "متبل", "desc": "وسط: 50 ج.م | كبير: 60 ج.م", "price": 50.0, "options": [{"name": "وسط", "price": 50}, {"name": "كبير", "price": 60}], "available": true, "featured": false}, {"id": "item_205", "cat": "مقبلات وخبز", "name": "أرز بسمتي", "desc": "طبق: 55 ج.م | سرفيس كبير: 70 ج.م", "price": 55.0, "options": [{"name": "طبق", "price": 55}, {"name": "سرفيس كبير", "price": 70}], "available": true, "featured": false}, {"id": "item_206", "cat": "مقبلات وخبز", "name": "زبادي بالخيار", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_207", "cat": "مقبلات وخبز", "name": "بابا غنوج", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_208", "cat": "مقبلات وخبز", "name": "تبولة", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_209", "cat": "مقبلات وخبز", "name": "فتوش", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_210", "cat": "مقبلات وخبز", "name": "جاط سلطة صغير", "desc": "", "price": 75.0, "options": [], "available": true, "featured": false}, {"id": "item_211", "cat": "مقبلات وخبز", "name": "طبق محمرة", "desc": "", "price": 80.0, "options": [], "available": true, "featured": false}, {"id": "item_212", "cat": "مقبلات وخبز", "name": "يالنجي ورق عنب", "desc": "طبق: 80 ج.م | سرفيس / كيلو: 400 ج.م", "price": 80.0, "options": [{"name": "طبق", "price": 80}, {"name": "سرفيس / كيلو", "price": 400}], "available": true, "featured": false}, {"id": "item_213", "cat": "مقبلات وخبز", "name": "جاط تبولة صغيرة", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_214", "cat": "مقبلات وخبز", "name": "كبة نية", "desc": "100 جم: 125 ج.م | 200 جم: 250 ج.م | نصف كيلو: 550 ج.م", "price": 125.0, "options": [{"name": "100 جم", "price": 125}, {"name": "200 جم", "price": 250}, {"name": "نصف كيلو", "price": 550}], "available": true, "featured": false}, {"id": "item_215", "cat": "مقبلات وخبز", "name": "صحن فرنسي", "desc": "", "price": 150.0, "options": [], "available": true, "featured": false}, {"id": "item_216", "cat": "مقبلات وخبز", "name": "حمص مع اللحمة", "desc": "", "price": 200.0, "options": [], "available": true, "featured": false}, {"id": "item_217", "cat": "حلويات", "name": "كنافة بالقشطة", "desc": "ربع كيلو: 115 ج.م | نصف كيلو: 250 ج.م | كيلو كامل: 450 ج.م", "price": 115.0, "options": [{"name": "ربع كيلو", "price": 115}, {"name": "نصف كيلو", "price": 250}, {"name": "كيلو كامل", "price": 450}], "available": true, "featured": false}, {"id": "item_218", "cat": "حلويات", "name": "معروك ساده", "desc": "", "price": 140.0, "options": [], "available": true, "featured": false}, {"id": "item_219", "cat": "حلويات", "name": "مشبك", "desc": "", "price": 150.0, "options": [], "available": true, "featured": false}, {"id": "item_220", "cat": "حلويات", "name": "قطايف قشطة", "desc": "", "price": 175.0, "options": [], "available": true, "featured": false}, {"id": "item_221", "cat": "حلويات", "name": "معروك جبنه", "desc": "", "price": 175.0, "options": [], "available": true, "featured": false}, {"id": "item_222", "cat": "حلويات", "name": "معروك زبيب", "desc": "", "price": 175.0, "options": [], "available": true, "featured": false}, {"id": "item_223", "cat": "حلويات", "name": "معروك شوكولاته", "desc": "", "price": 175.0, "options": [], "available": true, "featured": false}, {"id": "item_224", "cat": "حلويات", "name": "معروك عجوة", "desc": "", "price": 175.0, "options": [], "available": true, "featured": false}, {"id": "item_225", "cat": "حلويات", "name": "طبق حلويات شرقية مشكل", "desc": "", "price": 200.0, "options": [], "available": true, "featured": false}, {"id": "item_226", "cat": "حلويات", "name": "قطايف جوز", "desc": "", "price": 225.0, "options": [], "available": true, "featured": false}, {"id": "item_227", "cat": "حلويات", "name": "معروك قشطه", "desc": "", "price": 225.0, "options": [], "available": true, "featured": false}, {"id": "item_228", "cat": "حلويات", "name": "طبق فواكه موسمية مشكل", "desc": "", "price": 250.0, "options": [], "available": true, "featured": false}, {"id": "item_229", "cat": "حلويات", "name": "لقمة القاضي", "desc": "", "price": 350.0, "options": [], "available": true, "featured": false}, {"id": "item_230", "cat": "حلويات", "name": "مغشوشه", "desc": "", "price": 700.0, "options": [], "available": true, "featured": false}, {"id": "item_231", "cat": "حلويات", "name": "كنافة بالفستق", "desc": "", "price": 750.0, "options": [], "available": true, "featured": false}, {"id": "item_232", "cat": "حلويات", "name": "كنافة تركية", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_233", "cat": "كريب ووافل وسلطات فواكه", "name": "بان كيك", "desc": "", "price": 55.0, "options": [], "available": true, "featured": false}, {"id": "item_234", "cat": "كريب ووافل وسلطات فواكه", "name": "كريب فواكه", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_235", "cat": "كريب ووافل وسلطات فواكه", "name": "تشيز كيك", "desc": "", "price": 75.0, "options": [], "available": true, "featured": false}, {"id": "item_236", "cat": "كريب ووافل وسلطات فواكه", "name": "مولتن كيك", "desc": "", "price": 75.0, "options": [], "available": true, "featured": false}, {"id": "item_237", "cat": "كريب ووافل وسلطات فواكه", "name": "سلطة فواكه", "desc": "", "price": 90.0, "options": [], "available": true, "featured": false}, {"id": "item_238", "cat": "كريب ووافل وسلطات فواكه", "name": "كريب لوتس", "desc": "", "price": 90.0, "options": [], "available": true, "featured": false}, {"id": "item_239", "cat": "كريب ووافل وسلطات فواكه", "name": "كريب نوتيلا", "desc": "", "price": 90.0, "options": [], "available": true, "featured": false}, {"id": "item_240", "cat": "كريب ووافل وسلطات فواكه", "name": "سلطة الفراولة اليونانية", "desc": "", "price": 95.0, "options": [], "available": true, "featured": false}, {"id": "item_241", "cat": "كريب ووافل وسلطات فواكه", "name": "سلطة فواكه بالقشطه", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_242", "cat": "كريب ووافل وسلطات فواكه", "name": "سلطة فواكه لوتس", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_243", "cat": "كريب ووافل وسلطات فواكه", "name": "سلطة فواكه نوتيلا", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_244", "cat": "كريب ووافل وسلطات فواكه", "name": "سلطة فواكهبالمكسرات والعسل", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_245", "cat": "كريب ووافل وسلطات فواكه", "name": "كريب سوشي", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_246", "cat": "كريب ووافل وسلطات فواكه", "name": "كريب فتوتشيني", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_247", "cat": "كريب ووافل وسلطات فواكه", "name": "كريب نوتيلا مع فاكهة", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_248", "cat": "كريب ووافل وسلطات فواكه", "name": "وافل فواكه", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_249", "cat": "كريب ووافل وسلطات فواكه", "name": "وافل نوتيلا", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_250", "cat": "كريب ووافل وسلطات فواكه", "name": "وافل لوتس", "desc": "", "price": 110.0, "options": [], "available": true, "featured": false}, {"id": "item_251", "cat": "عصائر ومشروبات باردة", "name": "مياه معدنية", "desc": "", "price": 15.0, "options": [], "available": true, "featured": false}, {"id": "item_252", "cat": "عصائر ومشروبات باردة", "name": "لبن رايب", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_253", "cat": "عصائر ومشروبات باردة", "name": "بيبسي", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_254", "cat": "عصائر ومشروبات باردة", "name": "خزنة", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_255", "cat": "عصائر ومشروبات باردة", "name": "سفن", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_256", "cat": "عصائر ومشروبات باردة", "name": "كولا V", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_257", "cat": "عصائر ومشروبات باردة", "name": "آيس كريم", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_258", "cat": "عصائر ومشروبات باردة", "name": "ليمون", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_259", "cat": "عصائر ومشروبات باردة", "name": "سوس", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_260", "cat": "عصائر ومشروبات باردة", "name": "موهيتو", "desc": "", "price": 55.0, "options": [], "available": true, "featured": false}, {"id": "item_261", "cat": "عصائر ومشروبات باردة", "name": "ايطاليان كلاود", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_262", "cat": "عصائر ومشروبات باردة", "name": "تمر هندي", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_263", "cat": "عصائر ومشروبات باردة", "name": "جلاب", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_264", "cat": "عصائر ومشروبات باردة", "name": "ستروبري موهيتو", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_265", "cat": "عصائر ومشروبات باردة", "name": "أناناس", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_266", "cat": "عصائر ومشروبات باردة", "name": "برتقال", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_267", "cat": "عصائر ومشروبات باردة", "name": "بطيخ", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_268", "cat": "عصائر ومشروبات باردة", "name": "جوافة", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_269", "cat": "عصائر ومشروبات باردة", "name": "عصير فراولة", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_270", "cat": "عصائر ومشروبات باردة", "name": "كوكتيل نوتيلا", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_271", "cat": "عصائر ومشروبات باردة", "name": "كيوي", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_272", "cat": "عصائر ومشروبات باردة", "name": "ريد بول مكسيكي", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_273", "cat": "عصائر ومشروبات باردة", "name": "سوبيا", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_274", "cat": "عصائر ومشروبات باردة", "name": "عصير برتقال", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_275", "cat": "عصائر ومشروبات باردة", "name": "فرابيه", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_276", "cat": "عصائر ومشروبات باردة", "name": "ميلك تشيك", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_277", "cat": "عصائر ومشروبات باردة", "name": "سموزي ليمون بالنعناع", "desc": "", "price": 75.0, "options": [], "available": true, "featured": false}, {"id": "item_278", "cat": "عصائر ومشروبات باردة", "name": "ريدبول", "desc": "", "price": 80.0, "options": [], "available": true, "featured": false}, {"id": "item_279", "cat": "عصائر ومشروبات باردة", "name": "كوكتيل فراولة باللبن", "desc": "", "price": 80.0, "options": [], "available": true, "featured": false}, {"id": "item_280", "cat": "عصائر ومشروبات باردة", "name": "كوكتيل فلوريدا", "desc": "", "price": 80.0, "options": [], "available": true, "featured": false}, {"id": "item_281", "cat": "عصائر ومشروبات باردة", "name": "كوكتيل موز باللبن", "desc": "", "price": 80.0, "options": [], "available": true, "featured": false}, {"id": "item_282", "cat": "عصائر ومشروبات باردة", "name": "مانجا", "desc": "", "price": 80.0, "options": [], "available": true, "featured": false}, {"id": "item_283", "cat": "عصائر ومشروبات باردة", "name": "بلو سكاي", "desc": "", "price": 85.0, "options": [], "available": true, "featured": false}, {"id": "item_284", "cat": "عصائر ومشروبات باردة", "name": "فراولة", "desc": "", "price": 85.0, "options": [], "available": true, "featured": false}, {"id": "item_285", "cat": "عصائر ومشروبات باردة", "name": "ريدبول القيصر", "desc": "", "price": 90.0, "options": [], "available": true, "featured": false}, {"id": "item_286", "cat": "عصائر ومشروبات باردة", "name": "ريدبول موهيتو", "desc": "", "price": 90.0, "options": [], "available": true, "featured": false}, {"id": "item_287", "cat": "عصائر ومشروبات باردة", "name": "كوكتيل قشاطي", "desc": "", "price": 90.0, "options": [], "available": true, "featured": false}, {"id": "item_288", "cat": "عصائر ومشروبات باردة", "name": "كوكتيل افوكادو بالعسل", "desc": "", "price": 150.0, "options": [], "available": true, "featured": false}, {"id": "item_289", "cat": "مشروبات ساخنة وكافيه", "name": "نسكافيه بلاك", "desc": "", "price": 30.0, "options": [], "available": true, "featured": false}, {"id": "item_290", "cat": "مشروبات ساخنة وكافيه", "name": "يانسون", "desc": "", "price": 30.0, "options": [], "available": true, "featured": false}, {"id": "item_291", "cat": "مشروبات ساخنة وكافيه", "name": "زنجبيل", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_292", "cat": "مشروبات ساخنة وكافيه", "name": "شاي اخضر", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_293", "cat": "مشروبات ساخنة وكافيه", "name": "كمون وليمون", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_294", "cat": "مشروبات ساخنة وكافيه", "name": "شاي", "desc": "", "price": 40.0, "options": [], "available": true, "featured": false}, {"id": "item_295", "cat": "مشروبات ساخنة وكافيه", "name": "اسبريسو لونجو", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_296", "cat": "مشروبات ساخنة وكافيه", "name": "زنجبيل بالعسل", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_297", "cat": "مشروبات ساخنة وكافيه", "name": "زهورات", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_298", "cat": "مشروبات ساخنة وكافيه", "name": "قهوة سادة / مضبوط", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_299", "cat": "مشروبات ساخنة وكافيه", "name": "ميكاتو", "desc": "", "price": 45.0, "options": [], "available": true, "featured": false}, {"id": "item_300", "cat": "مشروبات ساخنة وكافيه", "name": "إسبريسو", "desc": "سنجل: 50 ج.م | دبل: 65 ج.م", "price": 50.0, "options": [{"name": "سنجل", "price": 50}, {"name": "دبل", "price": 65}], "available": true, "featured": false}, {"id": "item_301", "cat": "مشروبات ساخنة وكافيه", "name": "قهوة تركي", "desc": "سنجل: 50 ج.م | دبل: 65 ج.م", "price": 50.0, "options": [{"name": "سنجل", "price": 50}, {"name": "دبل", "price": 65}], "available": true, "featured": false}, {"id": "item_302", "cat": "مشروبات ساخنة وكافيه", "name": "جامايكا", "desc": "", "price": 55.0, "options": [], "available": true, "featured": false}, {"id": "item_303", "cat": "مشروبات ساخنة وكافيه", "name": "سان فرانسيسكو", "desc": "", "price": 55.0, "options": [], "available": true, "featured": false}, {"id": "item_304", "cat": "مشروبات ساخنة وكافيه", "name": "آيس موكا", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_305", "cat": "مشروبات ساخنة وكافيه", "name": "شاي باللبن", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_306", "cat": "مشروبات ساخنة وكافيه", "name": "كابتشينو", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_307", "cat": "مشروبات ساخنة وكافيه", "name": "نسكافيه بالحليب", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_308", "cat": "مشروبات ساخنة وكافيه", "name": "وايت موكا", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_309", "cat": "مشروبات ساخنة وكافيه", "name": "آيس لاتيه", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_310", "cat": "مشروبات ساخنة وكافيه", "name": "قهوة فرنساوي", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_311", "cat": "مشروبات ساخنة وكافيه", "name": "لاتيه", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_312", "cat": "مشروبات ساخنة وكافيه", "name": "هوت شوكليت", "desc": "", "price": 65.0, "options": [], "available": true, "featured": false}, {"id": "item_313", "cat": "مشروبات ساخنة وكافيه", "name": "سحلب", "desc": "", "price": 70.0, "options": [], "available": true, "featured": false}, {"id": "item_314", "cat": "مشروبات ساخنة وكافيه", "name": "براد شاي تركي", "desc": "صغير: 150 ج.م | كبير: 200 ج.م", "price": 150.0, "options": [{"name": "صغير", "price": 150}, {"name": "كبير", "price": 200}], "available": true, "featured": false}, {"id": "item_315", "cat": "أراجيل", "name": "أرجيلة (شيشة)", "desc": "سلوم: 45 ج.م | فواكه / معسل: 150 ج.م", "price": 45.0, "options": [{"name": "سلوم", "price": 45}, {"name": "فواكه / معسل", "price": 150}], "available": true, "featured": false}, {"id": "item_316", "cat": "لحمة نية (ملحمة)", "name": "مقدم", "desc": "", "price": 25.0, "options": [], "available": true, "featured": false}, {"id": "item_317", "cat": "لحمة نية (ملحمة)", "name": "لسانات", "desc": "", "price": 35.0, "options": [], "available": true, "featured": false}, {"id": "item_318", "cat": "لحمة نية (ملحمة)", "name": "سندوانه", "desc": "", "price": 60.0, "options": [], "available": true, "featured": false}, {"id": "item_319", "cat": "لحمة نية (ملحمة)", "name": "مخ ني", "desc": "", "price": 75.0, "options": [], "available": true, "featured": false}, {"id": "item_320", "cat": "لحمة نية (ملحمة)", "name": "برغل", "desc": "", "price": 90.0, "options": [], "available": true, "featured": false}, {"id": "item_321", "cat": "لحمة نية (ملحمة)", "name": "وراك نيه", "desc": "", "price": 125.0, "options": [], "available": true, "featured": false}, {"id": "item_322", "cat": "لحمة نية (ملحمة)", "name": "اجنحه نيه", "desc": "", "price": 200.0, "options": [], "available": true, "featured": false}, {"id": "item_323", "cat": "لحمة نية (ملحمة)", "name": "عصاعيص", "desc": "", "price": 350.0, "options": [], "available": true, "featured": false}, {"id": "item_324", "cat": "لحمة نية (ملحمة)", "name": "فرخة نيه", "desc": "", "price": 350.0, "options": [], "available": true, "featured": false}, {"id": "item_325", "cat": "لحمة نية (ملحمة)", "name": "دهنه", "desc": "", "price": 400.0, "options": [], "available": true, "featured": false}, {"id": "item_326", "cat": "لحمة نية (ملحمة)", "name": "شحمه", "desc": "", "price": 400.0, "options": [], "available": true, "featured": false}, {"id": "item_327", "cat": "لحمة نية (ملحمة)", "name": "بيض غنم", "desc": "", "price": 450.0, "options": [], "available": true, "featured": false}, {"id": "item_328", "cat": "لحمة نية (ملحمة)", "name": "شيش ني", "desc": "", "price": 450.0, "options": [], "available": true, "featured": false}, {"id": "item_329", "cat": "لحمة نية (ملحمة)", "name": "سودة ومعلاق نية", "desc": "", "price": 550.0, "options": [], "available": true, "featured": false}, {"id": "item_330", "cat": "لحمة نية (ملحمة)", "name": "هبرة مدقوقة", "desc": "", "price": 550.0, "options": [], "available": true, "featured": false}, {"id": "item_331", "cat": "لحمة نية (ملحمة)", "name": "رقبة ضاني", "desc": "", "price": 600.0, "options": [], "available": true, "featured": false}, {"id": "item_332", "cat": "لحمة نية (ملحمة)", "name": "لحمة بالعضم", "desc": "", "price": 600.0, "options": [], "available": true, "featured": false}, {"id": "item_333", "cat": "لحمة نية (ملحمة)", "name": "ايمة", "desc": "", "price": 750.0, "options": [], "available": true, "featured": false}, {"id": "item_334", "cat": "لحمة نية (ملحمة)", "name": "برغر لحم ني", "desc": "", "price": 750.0, "options": [], "available": true, "featured": false}, {"id": "item_335", "cat": "لحمة نية (ملحمة)", "name": "فخده بالعضم", "desc": "", "price": 750.0, "options": [], "available": true, "featured": false}, {"id": "item_336", "cat": "لحمة نية (ملحمة)", "name": "كباب نيه", "desc": "", "price": 750.0, "options": [], "available": true, "featured": false}, {"id": "item_337", "cat": "لحمة نية (ملحمة)", "name": "شقف عادية", "desc": "", "price": 775.0, "options": [], "available": true, "featured": false}, {"id": "item_338", "cat": "لحمة نية (ملحمة)", "name": "راس عصفور عادية", "desc": "", "price": 800.0, "options": [], "available": true, "featured": false}, {"id": "item_339", "cat": "لحمة نية (ملحمة)", "name": "موزات بالعضم", "desc": "", "price": 800.0, "options": [], "available": true, "featured": false}, {"id": "item_340", "cat": "لحمة نية (ملحمة)", "name": "صاصيجو", "desc": "", "price": 850.0, "options": [], "available": true, "featured": false}, {"id": "item_341", "cat": "لحمة نية (ملحمة)", "name": "خشنة هبرة", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_342", "cat": "لحمة نية (ملحمة)", "name": "راس عصفور هبرة", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_343", "cat": "لحمة نية (ملحمة)", "name": "شرحات نيه", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_344", "cat": "لحمة نية (ملحمة)", "name": "شقف هبرة", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_345", "cat": "لحمة نية (ملحمة)", "name": "ناعمة هبرة", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_346", "cat": "لحمة نية (ملحمة)", "name": "هبرة مدقوقة ضانى", "desc": "", "price": 900.0, "options": [], "available": true, "featured": false}, {"id": "item_347", "cat": "لحمة نية (ملحمة)", "name": "مرتديلا حلبيه", "desc": "", "price": 950.0, "options": [], "available": true, "featured": false}, {"id": "item_348", "cat": "لحمة نية (ملحمة)", "name": "موزات", "desc": "", "price": 950.0, "options": [], "available": true, "featured": false}, {"id": "item_349", "cat": "لحمة نية (ملحمة)", "name": "ريش نيه", "desc": "", "price": 1300.0, "options": [], "available": true, "featured": false}, {"id": "item_350", "cat": "خدمات الذبح والتجهيز", "name": "سطل لبن", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_351", "cat": "خدمات الذبح والتجهيز", "name": "فحم", "desc": "", "price": 50.0, "options": [], "available": true, "featured": false}, {"id": "item_352", "cat": "خدمات الذبح والتجهيز", "name": "أجرة عمال", "desc": "", "price": 100.0, "options": [], "available": true, "featured": false}, {"id": "item_353", "cat": "خدمات الذبح والتجهيز", "name": "فريكة نيه", "desc": "", "price": 110.0, "options": [], "available": true, "featured": false}, {"id": "item_354", "cat": "خدمات الذبح والتجهيز", "name": "أجرة", "desc": "", "price": 200.0, "options": [], "available": true, "featured": false}, {"id": "item_355", "cat": "خدمات الذبح والتجهيز", "name": "خروف", "desc": "", "price": 300.0, "options": [], "available": true, "featured": false}, {"id": "item_356", "cat": "خدمات الذبح والتجهيز", "name": "رهن صواني", "desc": "", "price": 300.0, "options": [], "available": true, "featured": false}, {"id": "item_357", "cat": "خدمات الذبح والتجهيز", "name": "فستق", "desc": "", "price": 1300.0, "options": [], "available": true, "featured": false}, {"id": "item_358", "cat": "خدمات الذبح والتجهيز", "name": "صنوبر", "desc": "", "price": 1400.0, "options": [], "available": true, "featured": false}, {"id": "item_359", "cat": "خدمات الذبح والتجهيز", "name": "ذبح وتشفية", "desc": "", "price": 1500.0, "options": [], "available": true, "featured": false}];
+    const DEFAULT_ZONES = [
+      { id: "z_1", name: "المنطقة الأولى (قريب)", fee: 25 },
+      { id: "z_2", name: "المنطقة الثانية (متوسط)", fee: 40 },
+      { id: "z_3", name: "المنطقة الثالثة (بعيد)", fee: 60 }
+    ];
+
+    let state = {
+      config: JSON.parse(localStorage.getItem(STORE_ID + "_cfg")) || DEFAULT_CONFIG,
+      items: JSON.parse(localStorage.getItem(STORE_ID + "_items")) || INITIAL_ITEMS,
+      zones: JSON.parse(localStorage.getItem(STORE_ID + "_zones")) || DEFAULT_ZONES,
+      cart: [],
+      activeCat: "الكل",
+      orderType: "delivery",
+      selectedZone: "z_1"
+    };
+
+    function sanitize(str) {
+      const d = document.createElement('div');
+      d.textContent = str ?? '';
+      return d.innerHTML;
+    }
+
+    function saveState() {
+      localStorage.setItem(STORE_ID + "_cfg", JSON.stringify(state.config));
+      localStorage.setItem(STORE_ID + "_items", JSON.stringify(state.items));
+    }
+
+    function getCategories() {
+      const seen = [];
+      state.items.forEach(it => { if (!seen.includes(it.cat)) seen.push(it.cat); });
+      return ["الكل", ...seen];
+    }
+
+    window.selectCategory = function(cat) {
+      state.activeCat = cat;
+      renderCategories();
+      renderMenu();
+    };
+
+    function renderCategories() {
+      const cats = getCategories();
+      const el = document.getElementById("categoryPills");
+      el.innerHTML = cats.map(c => {
+        const active = state.activeCat === c;
+        const icon = c === "الكل" ? "✨" : (CAT_ICONS[c] || "🍽️");
+        return `<button onclick="selectCategory('${sanitize(c)}')" class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition border ${active ? 'gold-grad text-black border-[#E2C06D]' : 'bg-[#191919] text-stone-300 border-[#2E291E] hover:border-[#E2C06D]/50'}">${icon} ${sanitize(c)}</button>`;
+      }).join("");
+    }
+
+    function renderMenu() {
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const filtered = state.items.filter(it => {
+        const matchCat = state.activeCat === "الكل" || it.cat === state.activeCat;
+        const matchQ = !q || it.name.toLowerCase().includes(q) || it.cat.toLowerCase().includes(q) || (it.desc && it.desc.toLowerCase().includes(q));
+        return matchCat && matchQ;
+      });
+
+      document.getElementById("itemsCountBadge").textContent = `${filtered.length} صنف`;
+      const container = document.getElementById("menuList");
+      if (!filtered.length) {
+        container.innerHTML = `<div class="text-center py-12 text-stone-500 text-sm">لا توجد أصناف مطابقة لبحثك</div>`;
+        return;
+      }
+
+      const groups = {};
+      filtered.forEach(it => {
+        if (!groups[it.cat]) groups[it.cat] = [];
+        groups[it.cat].push(it);
+      });
+
+      container.innerHTML = Object.entries(groups).map(([cat, list]) => `
+        <section>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-extrabold text-[#E2C06D] flex items-center gap-1.5">
+              <span>${CAT_ICONS[cat] || "🍽️"}</span>
+              <span>${sanitize(cat)}</span>
+            </h2>
+            <span class="text-[11px] text-stone-500">${list.length} صنف</span>
+          </div>
+          <div class="space-y-2.5">
+            ${list.map(it => {
+              const hasOpts = it.options && it.options.length > 1;
+              const qtyInCart = state.cart.filter(c => c.itemId === it.id).reduce((s, c) => s + c.qty, 0);
+              return `
+              <div class="bg-[#181818] border border-[#26221A] rounded-2xl p-3.5 flex items-center justify-between gap-3 hover:border-[#E2C06D]/40 transition">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <h3 class="text-sm font-bold text-white truncate">${sanitize(it.name)}</h3>
+                    ${it.featured ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#E2C06D]/15 text-[#E2C06D] font-bold shrink-0">مميز</span>' : ''}
+                  </div>
+                  ${hasOpts ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${it.options.map(o => `<span class="text-[11px] bg-[#222] border border-[#2E291E] text-stone-200 px-2 py-0.5 rounded-lg">${sanitize(o.name)}: <strong class="text-[#E2C06D]">${o.price}</strong></span>`).join('')}</div>` : (it.desc ? `<p class="text-[11px] text-stone-400 mt-1 leading-relaxed">${sanitize(it.desc)}</p>` : '')}
+                  <p class="text-sm font-extrabold text-[#E2C06D] mt-1">
+                    ${hasOpts ? '<span class="text-[11px] font-normal text-stone-400">يبدأ من </span>' : ''}${it.price} <span class="text-[11px] font-normal text-stone-400">${sanitize(state.config.currency)}</span>
+                  </p>
+                </div>
+                ${!DEFAULT_VIEW_ONLY ? (
+                  hasOpts ? `
+                  <button onclick="openOptionsModal('${it.id}')" class="px-3.5 py-2 rounded-xl bg-[#E2C06D]/15 text-[#E2C06D] border border-[#E2C06D]/40 text-xs font-extrabold hover:bg-[#E2C06D] hover:text-black transition shrink-0">
+                    اختر الحجم ${qtyInCart > 0 ? `(${qtyInCart})` : ''}
+                  </button>` : (
+                  qtyInCart > 0 ? `
+                  <div class="flex items-center gap-2 bg-[#222] border border-[#E2C06D]/40 rounded-xl px-2 py-1">
+                    <button onclick="updateCartByKey('${it.id}__', 1)" class="w-7 h-7 rounded-lg gold-grad text-black font-extrabold flex items-center justify-center">+</button>
+                    <span class="text-xs font-extrabold w-5 text-center">${qtyInCart}</span>
+                    <button onclick="updateCartByKey('${it.id}__', -1)" class="w-7 h-7 rounded-lg bg-stone-800 text-white font-extrabold flex items-center justify-center">-</button>
+                  </div>` : `
+                  <button onclick="addDirectToCart('${it.id}', '', ${it.price})" class="px-3.5 py-2 rounded-xl bg-[#E2C06D]/15 text-[#E2C06D] border border-[#E2C06D]/40 text-xs font-extrabold hover:bg-[#E2C06D] hover:text-black transition shrink-0">
+                    + أضف
+                  </button>`)
+                ) : ''}
+              </div>`;
+            }).join("")}
+          </div>
+        </section>
+      `).join("");
+    }
+
+    window.openOptionsModal = function(id) {
+      const item = state.items.find(i => i.id === id);
+      if (!item) return;
+      document.getElementById("modalContainer").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div class="bg-[#161616] border border-[#2E291E] w-full max-w-[480px] rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-[#26221A] pb-3">
+              <div>
+                <h3 class="font-extrabold text-[#E2C06D] text-base">${sanitize(item.name)}</h3>
+                <p class="text-xs text-stone-400">اختر الوزن أو الحجم المطلوب</p>
+              </div>
+              <button onclick="closeModal()" class="text-stone-400 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="space-y-2.5">
+              ${item.options.map(opt => `
+                <button onclick="addDirectToCart('${item.id}', '${sanitize(opt.name)}', ${opt.price}); closeModal();" class="w-full flex items-center justify-between bg-[#1F1F1F] hover:bg-[#282419] border border-[#2E291E] hover:border-[#E2C06D] p-3.5 rounded-2xl transition">
+                  <span class="text-sm font-bold text-white">${sanitize(opt.name)}</span>
+                  <span class="text-sm font-extrabold text-[#E2C06D]">${opt.price} ${sanitize(state.config.currency)}</span>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    window.addDirectToCart = function(itemId, optName, price) {
+      const item = state.items.find(i => i.id === itemId);
+      if (!item) return;
+      const key = itemId + "__" + optName;
+      const existing = state.cart.find(c => c.key === key);
+      if (existing) existing.qty++;
+      else state.cart.push({
+        key,
+        itemId,
+        name: optName ? `${item.name} (${optName})` : item.name,
+        price,
+        qty: 1
+      });
+      updateCartUI();
+      renderMenu();
+    };
+
+    window.updateCartByKey = function(key, delta) {
+      const idx = state.cart.findIndex(c => c.key === key);
+      if (idx === -1) return;
+      state.cart[idx].qty += delta;
+      if (state.cart[idx].qty <= 0) state.cart.splice(idx, 1);
+      updateCartUI();
+      renderMenu();
+      if (document.getElementById("cartModalBody")) openCartModal();
+    };
+
+    function updateCartUI() {
+      const bar = document.getElementById("cartBar");
+      const count = state.cart.reduce((s, c) => s + c.qty, 0);
+      const sub = state.cart.reduce((s, c) => s + c.price * c.qty, 0);
+      if (count === 0 || DEFAULT_VIEW_ONLY) {
+        bar.classList.add("hidden");
+        return;
+      }
+      bar.classList.remove("hidden");
+      document.getElementById("cartCount").textContent = count;
+      document.getElementById("cartTotal").textContent = `${sub} ${state.config.currency}`;
+    }
+
+    window.closeModal = function() {
+      document.getElementById("modalContainer").innerHTML = "";
+    };
+
+    window.setOrderType = function(t) {
+      state.orderType = t;
+      openCartModal();
+    };
+
+    window.openCartModal = function() {
+      const sub = state.cart.reduce((s, c) => s + c.price * c.qty, 0);
+      const zoneObj = state.zones.find(z => z.id === state.selectedZone) || state.zones[0];
+      const fee = state.orderType === "delivery" ? (zoneObj ? zoneObj.fee : 0) : 0;
+      const total = sub + fee;
+
+      document.getElementById("modalContainer").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div class="bg-[#161616] border border-[#2E291E] w-full max-w-[480px] rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-[#26221A] flex items-center justify-between">
+              <h3 class="font-extrabold text-[#E2C06D]">سلة الطلبات</h3>
+              <button onclick="closeModal()" class="text-stone-400 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+            <div id="cartModalBody" class="p-4 space-y-4 flex-1 min-h-0 overflow-y-auto">
+              <div class="grid grid-cols-3 gap-2 bg-[#0E0E0E] p-1 rounded-xl border border-[#26221A]">
+                <button onclick="setOrderType('delivery')" class="py-2 rounded-lg text-xs font-bold ${state.orderType==='delivery'?'gold-grad text-black':'text-stone-400'}">توصيل 🛵</button>
+                <button onclick="setOrderType('pickup')" class="py-2 rounded-lg text-xs font-bold ${state.orderType==='pickup'?'gold-grad text-black':'text-stone-400'}">تيك أواي 🛍️</button>
+                <button onclick="setOrderType('dinein')" class="py-2 rounded-lg text-xs font-bold ${state.orderType==='dinein'?'gold-grad text-black':'text-stone-400'}">صالة 🍽️</button>
+              </div>
+
+              <div class="space-y-2">
+                ${state.cart.map(c => `
+                  <div class="flex items-center justify-between bg-[#1E1E1E] p-2.5 rounded-xl">
+                    <div>
+                      <p class="text-xs font-bold text-white">${sanitize(c.name)}</p>
+                      <p class="text-[11px] text-[#E2C06D]">${c.price * c.qty} ${state.config.currency}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button onclick="updateCartByKey('${sanitize(c.key)}', 1)" class="w-6 h-6 rounded bg-[#E2C06D] text-black font-bold text-xs">+</button>
+                      <span class="text-xs font-bold">${c.qty}</span>
+                      <button onclick="updateCartByKey('${sanitize(c.key)}', -1)" class="w-6 h-6 rounded bg-stone-700 text-white font-bold text-xs">-</button>
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+
+              ${state.orderType === 'dinein' ? `
+                <div>
+                  <label class="text-xs text-stone-400 block mb-1">رقم الطاولة *</label>
+                  <input id="custTable" type="text" placeholder="مثال: طاولة 5" class="w-full bg-[#0E0E0E] border border-[#2E291E] rounded-xl px-3 py-2 text-sm text-white">
+                </div>
+              ` : `
+                <div class="space-y-2.5">
+                  <input id="custName" type="text" placeholder="الاسم الكامل" class="w-full bg-[#0E0E0E] border border-[#2E291E] rounded-xl px-3 py-2 text-sm text-white">
+                  <input id="custPhone" type="tel" placeholder="رقم الموبايل" class="w-full bg-[#0E0E0E] border border-[#2E291E] rounded-xl px-3 py-2 text-sm text-white">
+                  ${state.orderType === 'delivery' ? `
+                    <select onchange="state.selectedZone=this.value; openCartModal();" class="w-full bg-[#0E0E0E] border border-[#2E291E] rounded-xl px-3 py-2 text-sm text-white">
+                      ${state.zones.map(z => `<option value="${z.id}" ${state.selectedZone===z.id?'selected':''}>${sanitize(z.name)} (+${z.fee} ${state.config.currency})</option>`).join("")}
+                    </select>
+                    <input id="custAddress" type="text" placeholder="العنوان بالتفصيل" class="w-full bg-[#0E0E0E] border border-[#2E291E] rounded-xl px-3 py-2 text-sm text-white">
+                  ` : ''}
+                </div>
+              `}
+              <textarea id="custNotes" rows="2" placeholder="ملاحظات إضافية على الطلب..." class="w-full bg-[#0E0E0E] border border-[#2E291E] rounded-xl px-3 py-2 text-sm text-white"></textarea>
+
+              <div class="bg-[#0E0E0E] p-3 rounded-xl border border-[#26221A] space-y-1 text-xs">
+                <div class="flex justify-between text-stone-400"><span>المجموع الفرعي</span><span>${sub} ${state.config.currency}</span></div>
+                ${state.orderType==='delivery' ? `<div class="flex justify-between text-stone-400"><span>رسوم التوصيل</span><span>${fee} ${state.config.currency}</span></div>` : ''}
+                <div class="flex justify-between text-sm font-extrabold text-[#E2C06D] pt-1 border-t border-[#26221A]"><span>الإجمالي النهائي</span><span>${total} ${state.config.currency}</span></div>
+              </div>
+            </div>
+            <div class="p-4 border-t border-[#26221A]">
+              <button onclick="sendWhatsAppOrder()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm transition">
+                إرسال الطلب عبر واتساب 💬
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    window.sendWhatsAppOrder = function() {
+      const sub = state.cart.reduce((s, c) => s + c.price * c.qty, 0);
+      const zoneObj = state.zones.find(z => z.id === state.selectedZone) || state.zones[0];
+      const fee = state.orderType === "delivery" ? (zoneObj ? zoneObj.fee : 0) : 0;
+      const total = sub + fee;
+      const typeLabel = state.orderType === 'delivery' ? 'توصيل للمنزل' : (state.orderType === 'pickup' ? 'تيك أواي (استلام)' : 'طلب صالة');
+
+      let msg = `*طلب جديد - ${state.config.name}*\n`;
+      msg += `نوع الطلب: ${typeLabel}\n`;
+      if (state.orderType === 'dinein') {
+        const tbl = document.getElementById("custTable")?.value.trim();
+        if (!tbl) return alert("يرجى إدخال رقم الطاولة");
+        msg += `رقم الطاولة: ${tbl}\n`;
+      } else {
+        const name = document.getElementById("custName")?.value.trim() || "عميل";
+        const phone = document.getElementById("custPhone")?.value.trim() || "-";
+        msg += `الاسم: ${name}\nالموبايل: ${phone}\n`;
+        if (state.orderType === 'delivery') {
+          const addr = document.getElementById("custAddress")?.value.trim() || "-";
+          msg += `المنطقة: ${zoneObj?.name || ''}\nالعنوان: ${addr}\n`;
+        }
+      }
+      msg += `\n*الأصناف:*\n`;
+      state.cart.forEach(c => {
+        msg += `• ${c.name} × ${c.qty} = ${c.price * c.qty} ${state.config.currency}\n`;
+      });
+      if (fee > 0) msg += `التوصيل: ${fee} ${state.config.currency}\n`;
+      msg += `*الإجمالي: ${total} ${state.config.currency}*\n`;
+      const notes = document.getElementById("custNotes")?.value.trim();
+      if (notes) msg += `ملاحظات: ${notes}`;
+
+      const wa = String(state.config.whatsapp).replace(/\D/g, "");
+      window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank");
+    };
+
+    window.shareMenu = function() {
+      if (navigator.share) navigator.share({ title: state.config.name, url: location.href });
+      else { navigator.clipboard?.writeText(location.href); alert("تم نسخ رابط المنيو"); }
+    };
+
+    window.openAdminModal = function() {
+      document.getElementById("modalContainer").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="bg-[#161616] border border-[#2E291E] w-full max-w-[440px] rounded-3xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-[#E2C06D]">إدارة المنيو وتصدير البيانات</h3>
+              <button onclick="closeModal()" class="text-stone-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="text-stone-400 block mb-1">رقم واتساب استقبال الطلبات (بدون +)</label>
+                <input id="admWa" type="text" value="${sanitize(state.config.whatsapp)}" class="w-full bg-[#0E0E0E] border border-[#2E291E] rounded-xl px-3 py-2 text-white">
+              </div>
+              <div class="flex gap-2">
+                <button onclick="saveAdminSettings()" class="flex-1 py-2.5 rounded-xl gold-grad text-black font-extrabold">حفظ الإعدادات</button>
+                <button onclick="exportExcel()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-extrabold">تصدير Excel 📊</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    window.saveAdminSettings = function() {
+      state.config.whatsapp = document.getElementById("admWa").value.trim() || state.config.whatsapp;
+      saveState();
+      closeModal();
+      alert("تم حفظ الإعدادات بنجاح");
+    };
+
+    window.exportExcel = function() {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(state.items.map(i => ({
+        "id": i.id, "القسم": i.cat, "اسم الصنف": i.name, "السعر": i.price, "متوفر": i.available ? "TRUE" : "FALSE"
+      })));
+      XLSX.utils.book_append_sheet(wb, ws, "المنيو");
+      XLSX.writeFile(wb, "Al_Kaysar_Menu_v2.xlsx");
+    };
+
+    renderCategories();
+    renderMenu();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
